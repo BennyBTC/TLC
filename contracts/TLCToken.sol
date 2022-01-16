@@ -17,7 +17,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract TLCToken is ERC20, Ownable {
     using Address for address;
     
-    //address public marketingAddress;
+    address public marketingAddress;
     address public devAddress;
 
     uint256 public constant FEE_DENOMINATOR = 10000;
@@ -38,11 +38,11 @@ contract TLCToken is ERC20, Ownable {
     event SetMarketingAddress(address marketingAddress);
 
     constructor(
-        address _devAddress
-        //address _marketingAddress
+        address _devAddress,
+        address _marketingAddress
     ) ERC20("TLC", "TLC") {
         devAddress = _devAddress;
-        //marketingAddress = _marketingAddress;
+        marketingAddress = _marketingAddress;
 
         _mint(_msgSender(), 1000000000 * 1e18);
     }
@@ -61,16 +61,18 @@ contract TLCToken is ERC20, Ownable {
         if (feeWhitelist[sender]) {
             _transfer(sender, recipient, amount);
         } else {
-            //uint256 devTransferToFee = transferToDevFee[recipient];
-            //uint256 marketingTransferToFee = transferToMarketingFee[recipient];
-            //uint256 devTransferFromFee = transferFromDevFee[sender];
-            //uint256 marketingTransferFromFee = transferFromMarketingFee[sender];
+            uint256 marketingToFee = transferToMarketingFee[recipient];
+            uint256 marketingFromFee = transferFromMarketingFee[sender];
             uint256 devToFee = (transferToDevFee[recipient] * amount) / FEE_DENOMINATOR;
             uint256 devFromFee = (transferFromDevFee[sender] * amount) / FEE_DENOMINATOR;
             uint256 devFee = devToFee + devFromFee;
-            uint256 finalAmount = amount - devFee;
+            uint256 marketingFee = marketingToFee + marketingFromFee;
+            uint256 finalAmount = amount - devFee - marketingFee;
             if (devFee > 0) {
                 _transfer(sender, devAddress, devFee);
+            }
+            if (marketingFee > 0) {
+                _transfer(sender, marketingAddress, marketingFee);
             }
             _transfer(sender, recipient, finalAmount);
         }
@@ -83,37 +85,37 @@ contract TLCToken is ERC20, Ownable {
     }
 
     function setTransferToDevFee(address _to, uint256 _fee) external onlyOwner {
-        //require(transferToMarketingFee[_to] + _fee < MAX_TOTAL_FEE, "MAX_TOTAL_FEE");
+        require(transferToMarketingFee[_to] + _fee < MAX_TOTAL_FEE, "MAX_TOTAL_FEE");
         transferToDevFee[_to] = _fee;
         emit SetTransferToDevFee(_to, _fee);
     }
 
     function setTransferFromDevFee(address _from, uint256 _fee) external onlyOwner {
-        //require(transferFromMarketingFee[_from] + _fee < MAX_TOTAL_FEE, "MAX_TOTAL_FEE");
+        require(transferFromMarketingFee[_from] + _fee < MAX_TOTAL_FEE, "MAX_TOTAL_FEE");
         transferFromDevFee[_from] = _fee;
         emit SetTransferFromDevFee(_from, _fee);
     }
 
-    //function setTransferToMarketingFee(address _to, uint256 _fee) external onlyOwner {
-        //require(transferToDevFee[_to] + _fee < MAX_TOTAL_FEE, "MAX_TOTAL_FEE");
-        //transferToMarketingFee[_to] = _fee;
-        //emit SetTransferToMarketingFee(_to, _fee);
-    //}
+    function setTransferToMarketingFee(address _to, uint256 _fee) external onlyOwner {
+        require(transferToDevFee[_to] + _fee < MAX_TOTAL_FEE, "MAX_TOTAL_FEE");
+        transferToMarketingFee[_to] = _fee;
+        emit SetTransferToMarketingFee(_to, _fee);
+    }
 
-    //function setTransferFromMarketingFee(address _from, uint256 _fee) external onlyOwner {
-        //require(transferFromDevFee[_from] + _fee < MAX_TOTAL_FEE, "MAX_TOTAL_FEE");
-        //transferFromMarketingFee[_from] = _fee;
-        //emit SetTransferFromMarketingFee(_from, _fee);
-    //}
+    function setTransferFromMarketingFee(address _from, uint256 _fee) external onlyOwner {
+        require(transferFromDevFee[_from] + _fee < MAX_TOTAL_FEE, "MAX_TOTAL_FEE");
+        transferFromMarketingFee[_from] = _fee;
+        emit SetTransferFromMarketingFee(_from, _fee);
+    }
     
     function setDevAddress(address _devAddress) external onlyOwner {
         devAddress = _devAddress;
         emit SetDevAddress(devAddress);
     }
 
-    //function setMarketingAddress(address _marketingAddress) external onlyOwner {
-        //marketingAddress = _marketingAddress;
-        //emit SetMarketingAddress(marketingAddress);
-    //}
+    function setMarketingAddress(address _marketingAddress) external onlyOwner {
+        marketingAddress = _marketingAddress;
+        emit SetMarketingAddress(marketingAddress);
+    }
 
 }
