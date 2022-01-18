@@ -5,7 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract PreSale is Ownable {
+// TODO: increase price according to total BNB collected
+contract PreSaleAuction is Ownable {
 
     uint public bnbPerToken;
     uint public maxBnbPerUser;

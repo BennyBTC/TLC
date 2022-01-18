@@ -2,7 +2,9 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./interfaces/IPancakeRouter02.sol";
 
 // on initialization owner is minted entire supply (1 billion), no mint functionality
 // 4% fee on buying/selling aka transfers to/from pancakeswap router
@@ -14,30 +16,33 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 // addMassBlackList, removeMassBlackList
 
 contract TLCToken is ERC20, Ownable {
+
+    IPancakeRouter02 private constant pancakeRouter = IPancakeRouter02(0x10ED43C718714eb63d5aA57B78B54704E256024E);
+    address private constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
     
-    address public marketingAddress;
-    address public devAddress;
+    address payable public marketingAddress;
+    address payable public devAddress;
+
+    // once fees accumulate to this amount, will sell before next buy
+    uint public tokenSellAmount;
 
     uint256 public constant FEE_DENOMINATOR = 10000;
-    uint256 public constant MAX_TOTAL_FEE = 2500;
+    uint256 public constant MAX_FEE = 2500;
+
+    mapping (address => uint256) public transferToFee;
+    mapping (address => uint256) public transferFromFee;
     
-    mapping (address => uint256) public transferToDevFee;
-    mapping (address => uint256) public transferFromDevFee;
-    mapping (address => uint256) public transferToMarketingFee;
-    mapping (address => uint256) public transferFromMarketingFee;
     mapping (address => bool) public feeWhitelist; // addresses which won't have a fee applied
     mapping (address => bool) public blacklist;
 
-    event SetTransferToDevFee(address to, uint256 fee);
-    event SetTransferFromDevFee(address from, uint256 fee);
-    event SetTransferToMarketingFee(address to, uint256 fee);
-    event SetTransferFromMarketingFee(address from, uint256 fee);
+    event SetTransferToFee(address to, uint256 fee);
+    event SetTransferFromFee(address from, uint256 fee);
     event SetDevAddress(address devAddress);
     event SetMarketingAddress(address marketingAddress);
 
     constructor(
-        address _devAddress,
-        address _marketingAddress
+        address payable _devAddress,
+        address payable _marketingAddress
     ) ERC20("TLC", "TLC") {
         devAddress = _devAddress;
         marketingAddress = _marketingAddress;
@@ -61,19 +66,11 @@ contract TLCToken is ERC20, Ownable {
         if (feeWhitelist[sender]) {
             _transfer(sender, recipient, amount);
         } else {
-            uint256 marketingToFee = transferToMarketingFee[recipient];
-            uint256 marketingFromFee = transferFromMarketingFee[sender];
-            uint256 devToFee = (transferToDevFee[recipient] * amount) / FEE_DENOMINATOR;
-            uint256 devFromFee = (transferFromDevFee[sender] * amount) / FEE_DENOMINATOR;
-            uint256 devFee = devToFee + devFromFee;
-            uint256 marketingFee = marketingToFee + marketingFromFee;
-            uint256 finalAmount = amount - devFee - marketingFee;
-            if (devFee > 0) {
-                _transfer(sender, devAddress, devFee);
-            }
-            if (marketingFee > 0) {
-                _transfer(sender, marketingAddress, marketingFee);
-            }
+            uint256 toFee = transferToFee[recipient];
+            uint256 fromFee = transferFromFee[sender];
+            uint256 fee = toFee + fromFee;
+            uint256 finalAmount = amount - fee;
+            _transfer(sender, address(this), fee);
             _transfer(sender, recipient, finalAmount);
         }
 
@@ -84,36 +81,24 @@ contract TLCToken is ERC20, Ownable {
         return true;
     }
 
-    function setTransferToDevFee(address _to, uint256 _fee) external onlyOwner {
-        require(transferToMarketingFee[_to] + _fee < MAX_TOTAL_FEE, "MAX_TOTAL_FEE");
-        transferToDevFee[_to] = _fee;
-        emit SetTransferToDevFee(_to, _fee);
+    function setTransferToFee(address _to, uint256 _fee) external onlyOwner {
+        require(transferToFee[_to] < MAX_FEE, "MAX_FEE");
+        transferToFee[_to] = _fee;
+        emit SetTransferToFee(_to, _fee);
     }
 
-    function setTransferFromDevFee(address _from, uint256 _fee) external onlyOwner {
-        require(transferFromMarketingFee[_from] + _fee < MAX_TOTAL_FEE, "MAX_TOTAL_FEE");
-        transferFromDevFee[_from] = _fee;
-        emit SetTransferFromDevFee(_from, _fee);
+    function setTransferFromFee(address _from, uint256 _fee) external onlyOwner {
+        require(transferFromFee[_from] < MAX_FEE, "MAX_FEE");
+        transferFromFee[_from] = _fee;
+        emit SetTransferFromFee(_from, _fee);
     }
 
-    function setTransferToMarketingFee(address _to, uint256 _fee) external onlyOwner {
-        require(transferToDevFee[_to] + _fee < MAX_TOTAL_FEE, "MAX_TOTAL_FEE");
-        transferToMarketingFee[_to] = _fee;
-        emit SetTransferToMarketingFee(_to, _fee);
-    }
-
-    function setTransferFromMarketingFee(address _from, uint256 _fee) external onlyOwner {
-        require(transferFromDevFee[_from] + _fee < MAX_TOTAL_FEE, "MAX_TOTAL_FEE");
-        transferFromMarketingFee[_from] = _fee;
-        emit SetTransferFromMarketingFee(_from, _fee);
-    }
-    
-    function setDevAddress(address _devAddress) external onlyOwner {
+    function setDevAddress(address payable _devAddress) external onlyOwner {
         devAddress = _devAddress;
         emit SetDevAddress(devAddress);
     }
 
-    function setMarketingAddress(address _marketingAddress) external onlyOwner {
+    function setMarketingAddress(address payable _marketingAddress) external onlyOwner {
         marketingAddress = _marketingAddress;
         emit SetMarketingAddress(marketingAddress);
     }
@@ -141,5 +126,39 @@ contract TLCToken is ERC20, Ownable {
             blacklist[addresses[i]] = false;
         }
     }
+
+    function _checkForSell() private {
+        if (balanceOf(address(this)) >= tokenSellAmount) {
+            _swapTokensForBNB(tokenSellAmount);
+            _sendBNBToTeam();
+        }
+    }
+
+    function _swapTokensForBNB(uint _amount) private {
+        // generate the uniswap pair path of token -> weth
+        address[] memory path = new address[](2);
+        path[0] = address(this);
+        path[1] = WBNB;
+
+        _approve(address(this), address(pancakeRouter), _amount);
+
+        // make the swap
+        pancakeRouter.swapExactTokensForETHSupportingFeeOnTransferTokens(
+            _amount,
+            0, // accept any amount of ETH
+            path,
+            address(this),
+            block.timestamp
+        );
+    }
+
+    function _sendBNBToTeam() private {
+        uint balance = address(this).balance;
+        uint devAmount = balance / 100 * 75; // divide first to round down
+        uint marketingAmount = balance / 100 * 25;
+        Address.sendValue(devAddress, devAmount);
+        Address.sendValue(marketingAddress, marketingAmount);
+    }
+
 
 }
