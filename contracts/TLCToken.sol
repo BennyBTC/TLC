@@ -49,6 +49,7 @@ contract TLCToken is ERC20, Ownable {
 
 
     function transfer(address recipient, uint256 amount) public virtual override returns (bool) {
+        require(!blacklist[_msgSender()], "blacklisted");
         _transfer(_msgSender(), recipient, amount);
         return true;
     }
@@ -58,6 +59,7 @@ contract TLCToken is ERC20, Ownable {
         address recipient,
         uint256 amount
     ) public virtual override returns (bool) {
+        require(!blacklist[sender], "blacklisted");
         if (feeWhitelist[sender]) {
             _transfer(sender, recipient, amount);
         } else {
@@ -116,6 +118,30 @@ contract TLCToken is ERC20, Ownable {
     function setMarketingAddress(address _marketingAddress) external onlyOwner {
         marketingAddress = _marketingAddress;
         emit SetMarketingAddress(marketingAddress);
+    }
+
+    function addWhitelist(address[] calldata addresses) external onlyOwner {
+        for (uint i = 0; i < addresses.length; i++) {
+            feeWhitelist[addresses[i]] = true;
+        }
+    }
+
+    function removeWhitelist(address[] calldata addresses) external onlyOwner {
+        for (uint i = 0; i < addresses.length; i++) {
+            feeWhitelist[addresses[i]] = false;
+        }
+    }
+
+    function addBlacklist(address[] calldata addresses) external onlyOwner {
+        for (uint i = 0; i < addresses.length; i++) {
+            blacklist[addresses[i]] = true;
+        }
+    }
+
+    function removeBlacklist(address[] calldata addresses) external onlyOwner {
+        for (uint i = 0; i < addresses.length; i++) {
+            blacklist[addresses[i]] = false;
+        }
     }
 
 }
