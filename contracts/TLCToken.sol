@@ -2,7 +2,6 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 // on initialization owner is minted entire supply (1 billion), no mint functionality
@@ -15,7 +14,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 // addMassBlackList, removeMassBlackList
 
 contract TLCToken is ERC20, Ownable {
-    using Address for address;
     
     address public marketingAddress;
     address public devAddress;
