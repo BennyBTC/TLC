@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-// TODO: increase price according to total BNB collected
 contract PreSaleAuction is Ownable {
 
     uint public bnbPerToken;
@@ -34,6 +33,10 @@ contract PreSaleAuction is Ownable {
         IERC20(tokenAddress).transfer(msg.sender, tokenAmount);
     }
 
+    function setMaxBnbPerUser(uint _maxBnbPerUser) external onlyOwner {
+        maxBnbPerUser = _maxBnbPerUser;
+    }
+
     function addWhitelist(address[] calldata addresses) external onlyOwner {
         for (uint i = 0; i < addresses.length; i++) {
             whitelist[addresses[i]] = true;
@@ -48,6 +51,10 @@ contract PreSaleAuction is Ownable {
 
     function sendBNB() external onlyOwner {
         Address.sendValue(payable(owner()), address(this).balance);
+    }
+
+    function sendToken(uint amount) external onlyOwner {
+        IERC20(tokenAddress).transfer(owner(), amount);
     }
 
 }

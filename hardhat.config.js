@@ -1,3 +1,4 @@
+require("dotenv").config();
 require("@nomiclabs/hardhat-waffle");
 
 // This is a sample Hardhat task. To learn how to create your own go to
@@ -27,4 +28,16 @@ module.exports = {
       },
     ],
   },
+  networks: {
+    hardhat: {
+      forking: {
+        url: process.env.ARCHIVE_NODE_URL,
+        blockNumber: 14440000
+      },
+      chainId: 1337,
+      accounts: {
+        accountsBalance: "10000000000000000000000000000000"
+      },
+    }
+  }
 };

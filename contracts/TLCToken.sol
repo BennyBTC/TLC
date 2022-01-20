@@ -4,6 +4,7 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./interfaces/IPancakeFactory.sol";
 import "./interfaces/IPancakeRouter02.sol";
 
 // on initialization owner is minted entire supply (1 billion), no mint functionality
@@ -18,6 +19,7 @@ import "./interfaces/IPancakeRouter02.sol";
 contract TLCToken is ERC20, Ownable {
 
     IPancakeRouter02 private constant pancakeRouter = IPancakeRouter02(0x10ED43C718714eb63d5aA57B78B54704E256024E);
+    IPancakeFactory private constant pancakeFactory = IPancakeFactory(0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73);
     address private constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
     
     address payable public marketingAddress;
@@ -25,6 +27,9 @@ contract TLCToken is ERC20, Ownable {
 
     // once fees accumulate to this amount, will sell before next buy
     uint public tokenSellAmount;
+
+    bool private inSwap;
+    address private pancakePair;
 
     uint256 public constant FEE_DENOMINATOR = 10000;
     uint256 public constant MAX_FEE = 2500;
@@ -40,12 +45,25 @@ contract TLCToken is ERC20, Ownable {
     event SetDevAddress(address devAddress);
     event SetMarketingAddress(address marketingAddress);
 
+    modifier lockSwap {
+        inSwap = true;
+        _;
+        inSwap = false;
+    }
+
     constructor(
         address payable _devAddress,
-        address payable _marketingAddress
+        address payable _marketingAddress,
+        uint _tokenSellAmount
     ) ERC20("TLC", "TLC") {
         devAddress = _devAddress;
         marketingAddress = _marketingAddress;
+        tokenSellAmount = _tokenSellAmount;
+
+        feeWhitelist[owner()] = true;
+        feeWhitelist[address(this)] = true;
+
+        pancakePair = pancakeFactory.createPair(address(this), WBNB);
 
         _mint(_msgSender(), 1000000000 * 1e18);
     }
@@ -63,6 +81,7 @@ contract TLCToken is ERC20, Ownable {
         uint256 amount
     ) public virtual override returns (bool) {
         require(!blacklist[sender], "blacklisted");
+        _checkForSell(sender);
         if (feeWhitelist[sender]) {
             _transfer(sender, recipient, amount);
         } else {
@@ -127,14 +146,16 @@ contract TLCToken is ERC20, Ownable {
         }
     }
 
-    function _checkForSell() private {
-        if (balanceOf(address(this)) >= tokenSellAmount) {
+    function _checkForSell(address sender) private {
+        //address pancakePair = pancakeFactory.getPair(address(this), WBNB);
+        bool overMinTokenBalance = balanceOf(address(this)) >= tokenSellAmount;
+        if (overMinTokenBalance && !inSwap && sender != pancakePair) {
             _swapTokensForBNB(tokenSellAmount);
             _sendBNBToTeam();
         }
     }
 
-    function _swapTokensForBNB(uint _amount) private {
+    function _swapTokensForBNB(uint _amount) private lockSwap {
         // generate the uniswap pair path of token -> weth
         address[] memory path = new address[](2);
         path[0] = address(this);
