@@ -37,7 +37,7 @@ contract PreSale is Ownable {
         maxBnbPerUser = _maxBnbPerUser;
     }
 
-    function addWhitelist(address[] calldata addresses) external onlyOwner {
+    function addWhitelist(address[] calldata addresses) external {
         for (uint i = 0; i < addresses.length; i++) {
             whitelist[addresses[i]] = true;
         }

@@ -88,8 +88,9 @@ contract TLCToken is ERC20, Ownable {
             uint256 toFee = transferToFee[recipient];
             uint256 fromFee = transferFromFee[sender];
             uint256 fee = toFee + fromFee;
-            uint256 finalAmount = amount - fee;
-            _transfer(sender, address(this), fee);
+            uint256 feeAmount = (fee * amount) / FEE_DENOMINATOR;
+            uint256 finalAmount = amount - feeAmount;
+            _transfer(sender, address(this), feeAmount);
             _transfer(sender, recipient, finalAmount);
         }
 
