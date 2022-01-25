@@ -167,8 +167,8 @@ contract TLCToken is ERC20, Ownable {
 
     function _sendBNBToTeam() private {
         uint balance = address(this).balance;
-        uint devAmount = balance / 100 * 25; // divide first to round down
-        uint marketingAmount = balance / 100 * 75;
+        uint devAmount = (balance / 100) * 25; // divide first to round down
+        uint marketingAmount = (balance / 100) * 75;
         Address.sendValue(devAddress, devAmount);
         Address.sendValue(marketingAddress, marketingAmount);
     }
