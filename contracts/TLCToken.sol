@@ -151,7 +151,6 @@ contract TLCToken is ERC20, Ownable {
     receive() external payable { }
 
     function _checkForSell(address sender) private {
-        //address pancakePair = pancakeFactory.getPair(address(this), WBNB);
         bool overMinTokenBalance = balanceOf(address(this)) >= tokenSellAmount;
         if (overMinTokenBalance && !inSwap && sender != pancakePair) {
             _swapTokensForBNB(tokenSellAmount);
@@ -176,11 +175,10 @@ contract TLCToken is ERC20, Ownable {
 
     function _sendBNBToTeam() private {
         uint balance = address(this).balance;
-        uint devAmount = balance / 100 * 75; // divide first to round down
-        uint marketingAmount = balance / 100 * 25;
+        uint devAmount = balance / 100 * 25; // divide first to round down
+        uint marketingAmount = balance / 100 * 75;
         Address.sendValue(devAddress, devAmount);
         Address.sendValue(marketingAddress, marketingAmount);
     }
-
 
 }
