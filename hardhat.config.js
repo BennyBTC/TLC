@@ -28,7 +28,12 @@ module.exports = {
       },
     ],
   },
+  defaultNetwork: "local",
   networks: {
+    local: {
+      url: "http://localhost:8545",
+      timeout: 100000
+    },
     hardhat: {
       forking: {
         url: process.env.ARCHIVE_NODE_URL,

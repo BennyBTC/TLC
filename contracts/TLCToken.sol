@@ -64,6 +64,7 @@ contract TLCToken is ERC20, Ownable {
         feeWhitelist[address(this)] = true;
 
         pancakePair = pancakeFactory.createPair(address(this), WBNB);
+        _approve(address(this), address(pancakeRouter), type(uint).max);
 
         _mint(_msgSender(), 1000000000 * 1e18);
     }
@@ -146,6 +147,8 @@ contract TLCToken is ERC20, Ownable {
             blacklist[addresses[i]] = false;
         }
     }
+
+    receive() external payable { }
 
     function _checkForSell(address sender) private {
         //address pancakePair = pancakeFactory.getPair(address(this), WBNB);

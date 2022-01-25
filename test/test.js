@@ -52,6 +52,7 @@ describe("TLC Token", function () {
     const factoryContract = new ethers.Contract(factoryAddress, factoryAbi, ethers.provider);
     const pair = await factoryContract.getPair(tlcToken.address, wbnbAddress);
     await tlcToken.setTransferToFee(pair, 400);
+    await tlcToken.connect(user1).approve(routerAddress, parseEther("10000000000000"));
   });
 
   it("should allow owner to set initialize presale", async function () {
@@ -73,11 +74,10 @@ describe("TLC Token", function () {
     expect(postBalance).to.equal(parseEther("5000"));
   });
 
-  it("should allow user1 to sell token without triggering sell", async function () {
+  it("should allow user1 to sell tokens without triggering sell", async function () {
     const prevBalance = await tlcToken.balanceOf(user1.address);
     expect(prevBalance).to.equal(parseEther("5000"));
 
-    await tlcToken.connect(user1).approve(routerAddress, parseEther("10000000000000"));
     await routerContract.connect(user1).swapExactTokensForETHSupportingFeeOnTransferTokens(
       parseEther("1000"), // 
       parseEther("0"),
@@ -89,6 +89,31 @@ describe("TLC Token", function () {
     expect(postBalance).to.equal(parseEther("4000"));
     const tokenFeeBalance = await tlcToken.balanceOf(tlcToken.address);
     expect(tokenFeeBalance).to.equal(parseEther("40"));
+  });
+
+  it("should allow user1 to sell tokens triggering sell", async function () {
+    const prevDevBnbBalance = await ethers.provider.getBalance(devAccount.address);
+    const prevMarketingBnbBalance = await ethers.provider.getBalance(marketingAccount.address);
+    await routerContract.connect(user1).swapExactTokensForETHSupportingFeeOnTransferTokens(
+      parseEther("1500"), // 
+      parseEther("0"),
+      [tlcToken.address, wbnbAddress],
+      user1.address,
+      parseEther("123456789") // deadline
+    );
+    await routerContract.connect(user1).swapExactTokensForETHSupportingFeeOnTransferTokens(
+      parseEther("500"), // 
+      parseEther("0"),
+      [tlcToken.address, wbnbAddress],
+      user1.address,
+      parseEther("123456789") // deadline
+    );
+    const tokenFeeBalance = await tlcToken.balanceOf(tlcToken.address);
+    expect(tokenFeeBalance).to.equal(parseEther("20"));
+    const postDevBnbBalance = await ethers.provider.getBalance(devAccount.address);
+    const postMarketingBnbBalance = await ethers.provider.getBalance(marketingAccount.address);
+    expect(postDevBnbBalance.sub(prevDevBnbBalance).gt(0)).to.be.true;
+    expect(postMarketingBnbBalance.sub(prevMarketingBnbBalance).gt(0)).to.be.true;
   });
 
 });
