@@ -165,12 +165,9 @@ contract TLCToken is ERC20, Ownable {
         path[0] = address(this);
         path[1] = WBNB;
 
-        _approve(address(this), address(pancakeRouter), _amount);
-
-        // make the swap
         pancakeRouter.swapExactTokensForETHSupportingFeeOnTransferTokens(
             _amount,
-            0, // accept any amount of ETH
+            0,
             path,
             address(this),
             block.timestamp
