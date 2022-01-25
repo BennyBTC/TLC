@@ -7,14 +7,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IPancakeFactory.sol";
 import "./interfaces/IPancakeRouter02.sol";
 
-// on initialization owner is minted entire supply (1 billion), no mint functionality
-// 4% fee on buying/selling aka transfers to/from pancakeswap router
-// for this ^ add mapping of addresses which have fees, in case we have more than 1 dexes
-// whitelist 0 fees mapping for from addresses (owner, dev, marketing)
-// blacklist mapping cannot send tokens
-// 3% fees to marketing, 1% dev - don't sell immediately
-// anti snipe mechanism (might not be necessary due to 4% fee each way)
-// addMassBlackList, removeMassBlackList
 
 contract TLCToken is ERC20, Ownable {
 
