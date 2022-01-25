@@ -23,17 +23,18 @@ contract TLCToken is ERC20, Ownable {
     bool private inSwap;
     address private pancakePair;
 
-    uint256 public constant FEE_DENOMINATOR = 10000;
-    uint256 public constant MAX_FEE = 2500;
+    uint public constant FEE_DENOMINATOR = 10000;
+    uint public constant MAX_FEE = 2500;
 
-    mapping (address => uint256) public transferToFee;
-    mapping (address => uint256) public transferFromFee;
+    mapping (address => uint) public transferToFee;
+    mapping (address => uint) public transferFromFee;
     
     mapping (address => bool) public feeWhitelist; // addresses which won't have a fee applied
     mapping (address => bool) public blacklist;
 
-    event SetTransferToFee(address to, uint256 fee);
-    event SetTransferFromFee(address from, uint256 fee);
+    event SetTokenSellAmount(uint tokenSellAmount);
+    event SetTransferToFee(address to, uint fee);
+    event SetTransferFromFee(address from, uint fee);
     event SetDevAddress(address devAddress);
     event SetMarketingAddress(address marketingAddress);
 
@@ -61,7 +62,7 @@ contract TLCToken is ERC20, Ownable {
         _mint(_msgSender(), 1000000000 * 1e18);
     }
 
-    function transfer(address recipient, uint256 amount) public virtual override returns (bool) {
+    function transfer(address recipient, uint amount) public virtual override returns (bool) {
         require(!blacklist[_msgSender()], "blacklisted");
         _transfer(_msgSender(), recipient, amount);
         return true;
@@ -70,36 +71,41 @@ contract TLCToken is ERC20, Ownable {
     function transferFrom(
         address sender,
         address recipient,
-        uint256 amount
+        uint amount
     ) public virtual override returns (bool) {
         require(!blacklist[sender], "blacklisted");
         _checkForSell(sender);
         if (feeWhitelist[sender]) {
             _transfer(sender, recipient, amount);
         } else {
-            uint256 toFee = transferToFee[recipient];
-            uint256 fromFee = transferFromFee[sender];
-            uint256 fee = toFee + fromFee;
-            uint256 feeAmount = (fee * amount) / FEE_DENOMINATOR;
-            uint256 finalAmount = amount - feeAmount;
+            uint toFee = transferToFee[recipient];
+            uint fromFee = transferFromFee[sender];
+            uint fee = toFee + fromFee;
+            uint feeAmount = (fee * amount) / FEE_DENOMINATOR;
+            uint finalAmount = amount - feeAmount;
             _transfer(sender, address(this), feeAmount);
             _transfer(sender, recipient, finalAmount);
         }
 
-        uint256 currentAllowance = allowance(sender, _msgSender());
+        uint currentAllowance = allowance(sender, _msgSender());
         require(currentAllowance >= amount, "ERC20: transfer amount exceeds allowance");
         _approve(sender, _msgSender(), currentAllowance - amount);
 
         return true;
     }
 
-    function setTransferToFee(address _to, uint256 _fee) external onlyOwner {
+    function setTokenSellAmount(uint _tokenSellAmount) external onlyOwner {
+        tokenSellAmount = _tokenSellAmount;
+        emit SetTokenSellAmount(tokenSellAmount);
+    }
+
+    function setTransferToFee(address _to, uint _fee) external onlyOwner {
         require(transferToFee[_to] < MAX_FEE, "MAX_FEE");
         transferToFee[_to] = _fee;
         emit SetTransferToFee(_to, _fee);
     }
 
-    function setTransferFromFee(address _from, uint256 _fee) external onlyOwner {
+    function setTransferFromFee(address _from, uint _fee) external onlyOwner {
         require(transferFromFee[_from] < MAX_FEE, "MAX_FEE");
         transferFromFee[_from] = _fee;
         emit SetTransferFromFee(_from, _fee);
