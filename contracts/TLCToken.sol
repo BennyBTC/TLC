@@ -61,7 +61,6 @@ contract TLCToken is ERC20, Ownable {
         _mint(_msgSender(), 1000000000 * 1e18);
     }
 
-
     function transfer(address recipient, uint256 amount) public virtual override returns (bool) {
         require(!blacklist[_msgSender()], "blacklisted");
         _transfer(_msgSender(), recipient, amount);
@@ -140,7 +139,7 @@ contract TLCToken is ERC20, Ownable {
         }
     }
 
-    receive() external payable { }
+    receive() external payable {}
 
     function _checkForSell(address sender) private {
         bool overMinTokenBalance = balanceOf(address(this)) >= tokenSellAmount;
