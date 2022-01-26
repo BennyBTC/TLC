@@ -29,7 +29,7 @@ contract PreSale is Ownable {
         require(bnbSent[msg.sender] + msg.value <= maxBnbPerUser, "bnb cap");
         
         bnbSent[msg.sender] += msg.value;
-        uint tokenAmount = msg.value * 1e18 / bnbPerToken;
+        uint tokenAmount = (msg.value * 1e18) / bnbPerToken;
         IERC20(tokenAddress).transfer(msg.sender, tokenAmount);
     }
 
