@@ -27,7 +27,11 @@ contract PreSale is Ownable {
         IERC20(tokenAddress).transfer(msg.sender, tokenAmount);
     }
 
-    function addWhitelist(address[] calldata addresses) external {
+    function setBnbPerToken(uint _bnbPerToken) external onlyOwner {
+        bnbPerToken = _bnbPerToken;
+    }
+
+    function addwhitelist(address[] calldata addresses) external {
         for (uint i = 0; i < addresses.length; i++) {
             whitelist[addresses[i]] = true;
         }
