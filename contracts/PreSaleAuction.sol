@@ -65,6 +65,14 @@ contract PreSaleAuction is Ownable {
         }
     }
 
+    function getExpectedReturn(uint bnbAmount) external view returns (uint) {
+
+    }
+
+    function getRequiredBnb(uint tokenAmount) external view returns (uint) {
+
+    }
+
     function sendBNB() external onlyOwner {
         Address.sendValue(payable(owner()), address(this).balance);
     }

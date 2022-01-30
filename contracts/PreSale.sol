@@ -31,7 +31,11 @@ contract PreSale is Ownable {
         bnbPerToken = _bnbPerToken;
     }
 
-    function addwhitelist(address[] calldata addresses) external {
+    function addSingleWhitelist(address user) external {
+        whitelist[user] = true;
+    }
+
+    function addWhitelist(address[] calldata addresses) external {
         for (uint i = 0; i < addresses.length; i++) {
             whitelist[addresses[i]] = true;
         }
