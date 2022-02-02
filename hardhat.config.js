@@ -1,19 +1,6 @@
 require("dotenv").config();
 require("@nomiclabs/hardhat-waffle");
 
-// This is a sample Hardhat task. To learn how to create your own go to
-// https://hardhat.org/guides/create-task.html
-task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
-  const accounts = await hre.ethers.getSigners();
-
-  for (const account of accounts) {
-    console.log(account.address);
-  }
-});
-
-// You need to export an object to set up your config
-// Go to https://hardhat.org/config/ to learn more
-
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
@@ -22,13 +9,9 @@ module.exports = {
     compilers: [
       {
         version: "0.8.4"
-      },
-      {
-        version: "0.6.12"
-      },
+      }
     ],
   },
-  defaultNetwork: "local",
   networks: {
     local: {
       url: "http://localhost:8545",
@@ -43,6 +26,12 @@ module.exports = {
       accounts: {
         accountsBalance: "10000000000000000000000000000000"
       },
-    }
+    },
+    testnet: {
+      url: "https://data-seed-prebsc-1-s1.binance.org:8545",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      gasPrice: 5000000000,
+      timeout: 100000
+    },
   }
 };
