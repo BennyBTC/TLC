@@ -53,13 +53,6 @@ describe("TLC Token", function () {
     const pair = await factoryContract.getPair(tlcToken.address, wbnbAddress);
     await tlcToken.setTransferToFee(pair, 400);
     await tlcToken.connect(user1).approve(routerAddress, parseEther("10000000000000"));
-  });
-
-  it("should allow owner to set initialize presale", async function () {
-    await presale.addWhitelist([ user1.address ]);
-    const isUser1Whitelist = await presale.whitelist(user1.address);
-    expect(isUser1Whitelist).to.be.true;
-
     await tlcToken.transfer(presale.address, parseEther("1000000"));
   });
 
