@@ -29,7 +29,6 @@ describe("TLC Token", function () {
     const PreSaleFactory = await ethers.getContractFactory("PreSale");
     presale = await PreSaleFactory.deploy(
       ethers.utils.parseEther("0.001"),
-      ethers.utils.parseEther("5"),
       tlcToken.address
     );
     await presale.deployed();
@@ -53,7 +52,6 @@ describe("TLC Token", function () {
     const pair = await factoryContract.getPair(tlcToken.address, wbnbAddress);
     await tlcToken.setTransferToFee(pair, 400);
     await tlcToken.connect(user1).approve(routerAddress, parseEther("10000000000000"));
-    await tlcToken.transfer(presale.address, parseEther("1000000"));
   });
 
   it("should allow user1 to purchase token from presale", async function () {

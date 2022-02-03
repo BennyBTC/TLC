@@ -10,8 +10,6 @@ contract PreSale is Ownable {
     uint public bnbPerToken;
     address public tokenAddress;
 
-    mapping (address => bool) public whitelist;
-
     constructor(
         uint _bnbPerToken,
         address _tokenAddress
@@ -21,30 +19,12 @@ contract PreSale is Ownable {
     }
 
     receive() external payable {
-        require(whitelist[msg.sender], "whitelist");
-        
         uint tokenAmount = (msg.value * 1e18) / bnbPerToken;
         IERC20(tokenAddress).transfer(msg.sender, tokenAmount);
     }
 
     function setBnbPerToken(uint _bnbPerToken) external onlyOwner {
         bnbPerToken = _bnbPerToken;
-    }
-
-    function addSingleWhitelist(address user) external {
-        whitelist[user] = true;
-    }
-
-    function addWhitelist(address[] calldata addresses) external {
-        for (uint i = 0; i < addresses.length; i++) {
-            whitelist[addresses[i]] = true;
-        }
-    }
-
-    function removeWhitelist(address[] calldata addresses) external onlyOwner {
-        for (uint i = 0; i < addresses.length; i++) {
-            whitelist[addresses[i]] = false;
-        }
     }
 
     function sendBNB() external onlyOwner {
