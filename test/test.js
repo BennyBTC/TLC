@@ -8,15 +8,16 @@ const routerAddress = "0x10ED43C718714eb63d5aA57B78B54704E256024E";
 const factoryAddress = "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73";
 const wbnbAddress = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
 
-let owner, devAccount, marketingAccount, user1, user2;
-let tlcToken, presale, routerContract;
+let owner, devAccount, marketingAccount, user1, user2, user3;
+let tlcToken, presale, presaleAuction, routerContract;
+let priceCliffs;
 
 describe("TLC Token", function () {
   this.timeout(1000000);
 
   before(async function () {
 
-    [ owner, devAccount, marketingAccount, user1, user2 ] = await ethers.getSigners();
+    [ owner, devAccount, marketingAccount, user1, user2, user3 ] = await ethers.getSigners();
 
     const TLCTokenFactory = await ethers.getContractFactory("TLCToken");
     tlcToken = await TLCTokenFactory.deploy(
@@ -32,8 +33,15 @@ describe("TLC Token", function () {
       tlcToken.address
     );
     await presale.deployed();
-
     await tlcToken.transfer(presale.address, parseEther("10000000")); // 10 mil to presale
+
+    const PreSaleAuctionFactory = await ethers.getContractFactory("PreSaleAuction");
+    presaleAuction = await PreSaleAuctionFactory.deploy(
+      tlcToken.address
+    );
+    await presaleAuction.deployed();
+    await tlcToken.transfer(presaleAuction.address, parseEther("5000000")); // 5 mil to presale auction
+    // priceCliffs = await presaleAuction.priceCliffs();
 
     routerContract = new ethers.Contract(routerAddress, routerAbi, ethers.provider);
     await tlcToken.approve(routerAddress, parseEther("1000000000"));
@@ -105,6 +113,29 @@ describe("TLC Token", function () {
     const postMarketingBnbBalance = await ethers.provider.getBalance(marketingAccount.address);
     expect(postDevBnbBalance.sub(prevDevBnbBalance).gt(0)).to.be.true;
     expect(postMarketingBnbBalance.sub(prevMarketingBnbBalance).gt(0)).to.be.true;
+  });
+
+  it("should allow users to purchase from presale auction at initial price", async function () {
+    const prevBalance = await tlcToken.balanceOf(user2.address);
+    expect(prevBalance).to.equal(parseEther("0"));
+    const amount = parseEther("55");
+    const expectedReturn = await presaleAuction.getExpectedReturn(amount);
+    expect(expectedReturn).to.equal(parseEther("500000"));
+    await user2.sendTransaction({ to: presaleAuction.address, value: amount });
+    const postBalance = await tlcToken.balanceOf(user2.address);
+    expect(postBalance).to.equal(expectedReturn);
+  });
+
+  it("should allow users to purchase from presale auction at two prices", async function () {
+    const prevBalance = await tlcToken.balanceOf(user3.address);
+    expect(prevBalance).to.equal(parseEther("0"));
+    // currently 500,000/1,000,000 sold. 55 bnb for 1,000,000 and extra 32 for 200,000
+    const amount = parseEther("87");
+    const expectedReturn = await presaleAuction.getExpectedReturn(amount);
+    expect(expectedReturn).to.equal(parseEther("700000"));
+    await user3.sendTransaction({ to: presaleAuction.address, value: amount });
+    const postBalance = await tlcToken.balanceOf(user3.address);
+    expect(postBalance).to.equal(expectedReturn);
   });
 
 });

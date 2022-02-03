@@ -49,7 +49,7 @@ contract PreSaleAuction is Ownable {
         // if user is buying two price ranges
         if (totalSold + tokenAmount > nextCliffAmount) {
             uint purchase1Amount = nextCliffAmount - totalSold;
-            uint bnbForPurchase1 = (purchase1Amount * 1e18) / bnbPerToken;
+            uint bnbForPurchase1 = (purchase1Amount * bnbPerToken) / 1e18;
             uint bnbForPurchase2 = msg.value - bnbForPurchase1;
             uint newBnbPerToken = _getBnbPerToken(currentCliff + 1);
             uint purchase2Amount = (bnbForPurchase2 * 1e18) / newBnbPerToken;
@@ -76,7 +76,7 @@ contract PreSaleAuction is Ownable {
         // if user is buying two price ranges
         if (totalSold + tokenAmount > nextCliffAmount) {
             uint purchase1Amount = nextCliffAmount - totalSold;
-            uint bnbForPurchase1 = (purchase1Amount * 1e18) / bnbPerToken;
+            uint bnbForPurchase1 = (purchase1Amount * bnbPerToken) / 1e18;
             uint bnbForPurchase2 = bnbAmount - bnbForPurchase1;
             uint newBnbPerToken = _getBnbPerToken(currentCliff + 1);
             uint purchase2Amount = (bnbForPurchase2 * 1e18) / newBnbPerToken;
