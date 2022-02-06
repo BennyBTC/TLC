@@ -15,6 +15,7 @@ contract TLCToken is ERC20, Ownable {
     IPancakeRouter02 private constant pancakeRouter = IPancakeRouter02(0x10ED43C718714eb63d5aA57B78B54704E256024E);
     IPancakeFactory private constant pancakeFactory = IPancakeFactory(0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73);
     address private constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+    uint public constant MIN_SELL_AMOUNT = 1e18;
     
     address payable public marketingAddress;
     address payable public devAddress;
@@ -78,7 +79,7 @@ contract TLCToken is ERC20, Ownable {
         address recipient,
         uint amount
     ) public virtual override returns (bool) {
-        if (tokenSellAmount > 0) _checkForSell(sender);
+        if (tokenSellAmount > MIN_SELL_AMOUNT) _checkForSell(sender);
         _tlcTransfer(sender, recipient, amount);
 
         uint currentAllowance = allowance(sender, _msgSender());
