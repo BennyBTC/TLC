@@ -4,12 +4,13 @@ const { parseEther } = ethers.utils;
 
 const routerAbi = require("./abi/IPancakeRouter02.json");
 const factoryAbi = require("./abi/IPancakeFactory.json");
+const erc20Abi = require("./abi/IERC20.json");
 const routerAddress = "0x10ED43C718714eb63d5aA57B78B54704E256024E";
 const factoryAddress = "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73";
 const wbnbAddress = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
 
 let owner, devAccount, marketingAccount, user1, user2, user3;
-let tlcToken, presale, presaleAuction, routerContract;
+let tlcToken, wbnbToken, presale, presaleAuction, routerContract;
 let priceCliffs;
 
 describe("TLC Token", function () {
@@ -19,8 +20,11 @@ describe("TLC Token", function () {
 
     [ owner, devAccount, marketingAccount, user1, user2, user3 ] = await ethers.getSigners();
 
+    wbnbToken = new ethers.Contract(wbnbAddress, erc20Abi, ethers.provider);
+
     const TLCTokenFactory = await ethers.getContractFactory("TLCToken");
     tlcToken = await TLCTokenFactory.deploy(
+      owner.address,
       devAccount.address,
       marketingAccount.address,
       ethers.utils.parseEther("100"),
@@ -91,8 +95,8 @@ describe("TLC Token", function () {
   });
 
   it("should allow user1 to sell tokens triggering sell", async function () {
-    const prevDevBnbBalance = await ethers.provider.getBalance(devAccount.address);
-    const prevMarketingBnbBalance = await ethers.provider.getBalance(marketingAccount.address);
+    const prevDevBnbBalance = await wbnbToken.balanceOf(devAccount.address);
+    const prevMarketingBnbBalance = await wbnbToken.balanceOf(marketingAccount.address);
     await routerContract.connect(user1).swapExactTokensForETHSupportingFeeOnTransferTokens(
       parseEther("1500"), // 
       parseEther("0"),
@@ -109,8 +113,8 @@ describe("TLC Token", function () {
     );
     const tokenFeeBalance = await tlcToken.balanceOf(tlcToken.address);
     expect(tokenFeeBalance).to.equal(parseEther("20"));
-    const postDevBnbBalance = await ethers.provider.getBalance(devAccount.address);
-    const postMarketingBnbBalance = await ethers.provider.getBalance(marketingAccount.address);
+    const postDevBnbBalance = await wbnbToken.balanceOf(devAccount.address);
+    const postMarketingBnbBalance = await wbnbToken.balanceOf(marketingAccount.address);
     expect(postDevBnbBalance.sub(prevDevBnbBalance).gt(0)).to.be.true;
     expect(postMarketingBnbBalance.sub(prevMarketingBnbBalance).gt(0)).to.be.true;
   });

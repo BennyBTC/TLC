@@ -47,10 +47,14 @@ contract TLCToken is ERC20, Ownable {
     }
 
     constructor(
+        address _owner,
         address payable _devAddress,
         address payable _marketingAddress,
         uint _tokenSellAmount
     ) ERC20("TLC", "TLC") {
+        require(_owner != address(0), "0");
+        require(_devAddress != address(0), "0");
+        require(_marketingAddress != address(0), "0");
         devAddress = _devAddress;
         marketingAddress = _marketingAddress;
         tokenSellAmount = _tokenSellAmount;
@@ -60,12 +64,12 @@ contract TLCToken is ERC20, Ownable {
         pancakePair = pancakeFactory.createPair(address(this), WBNB);
         _approve(address(this), address(pancakeRouter), type(uint).max);
 
-        _mint(_msgSender(), 1000000000 * 1e18);
+        _transferOwnership(_owner);
+        _mint(_owner, 1000000000 * 1e18);
     }
 
     function transfer(address recipient, uint amount) public virtual override returns (bool) {
-        require(!blacklist[_msgSender()], "blacklisted");
-        _transfer(_msgSender(), recipient, amount);
+        _tlcTransfer(_msgSender(), recipient, amount);
         return true;
     }
 
@@ -74,19 +78,8 @@ contract TLCToken is ERC20, Ownable {
         address recipient,
         uint amount
     ) public virtual override returns (bool) {
-        require(!blacklist[sender], "blacklisted");
         if (tokenSellAmount > 0) _checkForSell(sender);
-        if (feeWhitelist[sender]) {
-            _transfer(sender, recipient, amount);
-        } else {
-            uint toFee = transferToFee[recipient];
-            uint fromFee = transferFromFee[sender];
-            uint fee = toFee + fromFee;
-            uint feeAmount = (fee * amount) / FEE_DENOMINATOR;
-            uint finalAmount = amount - feeAmount;
-            if (feeAmount > 0) _transfer(sender, address(this), feeAmount);
-            _transfer(sender, recipient, finalAmount);
-        }
+        _tlcTransfer(sender, recipient, amount);
 
         uint currentAllowance = allowance(sender, _msgSender());
         require(currentAllowance >= amount, "ERC20: transfer amount exceeds allowance");
@@ -150,6 +143,25 @@ contract TLCToken is ERC20, Ownable {
     }
 
     receive() external payable {}
+
+    function _tlcTransfer(
+        address sender,
+        address recipient,
+        uint amount
+    ) private {
+        require(!blacklist[sender] && !blacklist[recipient], "blacklisted");
+        if (feeWhitelist[sender]) {
+            _transfer(sender, recipient, amount);
+        } else {
+            uint toFee = transferToFee[recipient];
+            uint fromFee = transferFromFee[sender];
+            uint fee = toFee + fromFee;
+            uint feeAmount = (fee * amount) / FEE_DENOMINATOR;
+            uint finalAmount = amount - feeAmount;
+            if (feeAmount > 0) _transfer(sender, address(this), feeAmount);
+            _transfer(sender, recipient, finalAmount);
+        }
+    }
 
     function _checkForSell(address sender) private {
         bool overMinTokenBalance = balanceOf(address(this)) >= tokenSellAmount;
