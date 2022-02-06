@@ -2,13 +2,15 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IPancakeFactory.sol";
 import "./interfaces/IPancakeRouter02.sol";
+import "./interfaces/IWBNB.sol";
 
 
 contract TLCToken is ERC20, Ownable {
+    using SafeERC20 for IERC20;
 
     IPancakeRouter02 private constant pancakeRouter = IPancakeRouter02(0x10ED43C718714eb63d5aA57B78B54704E256024E);
     IPancakeFactory private constant pancakeFactory = IPancakeFactory(0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73);
@@ -53,7 +55,6 @@ contract TLCToken is ERC20, Ownable {
         marketingAddress = _marketingAddress;
         tokenSellAmount = _tokenSellAmount;
 
-        feeWhitelist[owner()] = true;
         feeWhitelist[address(this)] = true;
 
         pancakePair = pancakeFactory.createPair(address(this), WBNB);
@@ -74,7 +75,7 @@ contract TLCToken is ERC20, Ownable {
         uint amount
     ) public virtual override returns (bool) {
         require(!blacklist[sender], "blacklisted");
-        _checkForSell(sender);
+        if (tokenSellAmount > 0) _checkForSell(sender);
         if (feeWhitelist[sender]) {
             _transfer(sender, recipient, amount);
         } else {
@@ -83,7 +84,7 @@ contract TLCToken is ERC20, Ownable {
             uint fee = toFee + fromFee;
             uint feeAmount = (fee * amount) / FEE_DENOMINATOR;
             uint finalAmount = amount - feeAmount;
-            _transfer(sender, address(this), feeAmount);
+            if (feeAmount > 0) _transfer(sender, address(this), feeAmount);
             _transfer(sender, recipient, finalAmount);
         }
 
@@ -112,16 +113,19 @@ contract TLCToken is ERC20, Ownable {
     }
 
     function setDevAddress(address payable _devAddress) external onlyOwner {
+        require(_devAddress != address(0), "Non zero address");
         devAddress = _devAddress;
         emit SetDevAddress(devAddress);
     }
 
     function setMarketingAddress(address payable _marketingAddress) external onlyOwner {
+        require(_marketingAddress != address(0), "Non zero address");
         marketingAddress = _marketingAddress;
         emit SetMarketingAddress(marketingAddress);
     }
 
     function addWhitelist(address[] calldata addresses) external onlyOwner {
+        require(addresses.length > 0, "Zero not allowed");
         for (uint i = 0; i < addresses.length; i++) {
             feeWhitelist[addresses[i]] = true;
         }
@@ -174,8 +178,9 @@ contract TLCToken is ERC20, Ownable {
         uint balance = address(this).balance;
         uint devAmount = (balance / 100) * 25; // divide first to round down
         uint marketingAmount = (balance / 100) * 75;
-        Address.sendValue(devAddress, devAmount);
-        Address.sendValue(marketingAddress, marketingAmount);
+        IWBNB(WBNB).deposit{ value: balance }();
+        IERC20(WBNB).safeTransfer(devAddress, devAmount);
+        IERC20(WBNB).safeTransfer(marketingAddress, marketingAmount);
     }
 
 }
