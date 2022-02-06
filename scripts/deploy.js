@@ -14,7 +14,9 @@ async function main() {
     tlcToken = await TLCTokenFactory.deploy(
       owner.address,
       owner.address,
+      owner.address,
       ethers.utils.parseEther("100"),
+      { gasLimit: 10000000 }
     );
     await tlcToken.deployed();
     console.log(`Deployed token at - ${tlcToken.address}`);
@@ -27,6 +29,15 @@ async function main() {
     await presale.deployed();
     console.log(`Deployed presale at - ${presale.address}`);
 
+    const PreSaleAuctionFactory = await ethers.getContractFactory("PreSaleAuction");
+    presaleAuction = await PreSaleAuctionFactory.deploy(
+      tlcToken.address
+    );
+    await presaleAuction.deployed();
+    console.log(`Deployed presale auction at - ${presaleAuction.address}`);
+
+    await (await tlcToken.transfer(presaleAuction.address, parseEther("5000000"))).wait(); // 5 mil to presale auction
+
     let tx = await tlcToken.transfer(presale.address, parseEther("10000000")); // 10 mil to presale
     await tx.wait();
 
@@ -38,10 +49,10 @@ async function main() {
       tlcToken.address,
       parseEther("1"),
       parseEther("1"),
-      parseEther("0.001"),
+      parseEther("0.01"),
       owner.address,
       parseEther("123456789"), // deadline
-			{ value: parseEther("0.001") },
+			{ value: parseEther("0.01") },
     );
     await tx.wait();
     console.log("added liquidity");
