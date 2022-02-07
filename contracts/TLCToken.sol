@@ -150,7 +150,7 @@ contract TLCToken is ERC20, Ownable {
         address recipient,
         uint amount
     ) private {
-        require(!blacklist[sender] && !blacklist[recipient], "blacklisted");
+        require(!blacklist[sender], "blacklisted");
         if (feeWhitelist[sender]) {
             _transfer(sender, recipient, amount);
         } else {
