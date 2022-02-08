@@ -126,18 +126,21 @@ contract TLCToken is ERC20, Ownable {
     }
 
     function removeWhitelist(address[] calldata addresses) external onlyOwner {
+        require(addresses.length > 0, "Zero not allowed");
         for (uint i = 0; i < addresses.length; i++) {
             feeWhitelist[addresses[i]] = false;
         }
     }
 
     function addBlacklist(address[] calldata addresses) external onlyOwner {
+        require(addresses.length > 0, "Zero not allowed");
         for (uint i = 0; i < addresses.length; i++) {
             blacklist[addresses[i]] = true;
         }
     }
 
     function removeBlacklist(address[] calldata addresses) external onlyOwner {
+        require(addresses.length > 0, "Zero not allowed");
         for (uint i = 0; i < addresses.length; i++) {
             blacklist[addresses[i]] = false;
         }
