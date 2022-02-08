@@ -10,13 +10,14 @@ const wbnbAddress = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
 async function main() {
     [ owner ] = await ethers.getSigners();
 
+    const ownerAddress = process.env.OWNER_ADDRESS || owner.address;
+
     const TLCTokenFactory = await ethers.getContractFactory("TLCToken");
     tlcToken = await TLCTokenFactory.deploy(
-      owner.address,
-      owner.address,
-      owner.address,
-      ethers.utils.parseEther("100"),
-      { gasLimit: 10000000 }
+      ownerAddress,
+      ownerAddress,
+      ownerAddress,
+      ethers.utils.parseEther("100")
     );
     await tlcToken.deployed();
     console.log(`Deployed token at - ${tlcToken.address}`);
@@ -38,14 +39,12 @@ async function main() {
 
     await (await tlcToken.transfer(presaleAuction.address, parseEther("5000000"))).wait(); // 5 mil to presale auction
 
-    let tx = await tlcToken.transfer(presale.address, parseEther("10000000")); // 10 mil to presale
-    await tx.wait();
+    await (await tlcToken.transfer(presale.address, parseEther("10000000"))).wait(); // 10 mil to presale
 
     routerContract = new ethers.Contract(routerAddress, routerAbi, ethers.provider);
-    tx = await tlcToken.approve(routerAddress, parseEther("1000000000"));
-    await tx.wait();
+    await (await tlcToken.approve(routerAddress, parseEther("1000000000"))).wait();
     // add liquidity 10,000,000 TLC & 10,000 BNB
-    tx = await routerContract.connect(owner).addLiquidityETH(
+    await (await routerContract.connect(owner).addLiquidityETH(
       tlcToken.address,
       parseEther("1"),
       parseEther("1"),
@@ -53,9 +52,9 @@ async function main() {
       owner.address,
       parseEther("123456789"), // deadline
 			{ value: parseEther("0.01") },
-    );
-    await tx.wait();
+    )).wait();
     console.log("added liquidity");
+    await delay(20000);
 
     const factoryContract = new ethers.Contract(factoryAddress, factoryAbi, ethers.provider);
     const pair = await factoryContract.getPair(tlcToken.address, wbnbAddress);
@@ -63,6 +62,8 @@ async function main() {
     await tlcToken.setTransferToFee(pair, 400);
     console.log("Set transfer to fee for sells");
 }
+
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
