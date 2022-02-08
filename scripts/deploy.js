@@ -11,6 +11,8 @@ async function main() {
     [ owner ] = await ethers.getSigners();
 
     const ownerAddress = process.env.OWNER_ADDRESS || owner.address;
+    console.log(`deployer address - ${owner.address}`);
+    console.log(`owner address - ${ownerAddress}`);
 
     const TLCTokenFactory = await ethers.getContractFactory("TLCToken");
     tlcToken = await TLCTokenFactory.deploy(
@@ -37,30 +39,30 @@ async function main() {
     await presaleAuction.deployed();
     console.log(`Deployed presale auction at - ${presaleAuction.address}`);
 
-    await (await tlcToken.transfer(presaleAuction.address, parseEther("5000000"))).wait(); // 5 mil to presale auction
+    // await (await tlcToken.transfer(presaleAuction.address, parseEther("5000000"))).wait(); // 5 mil to presale auction
 
-    await (await tlcToken.transfer(presale.address, parseEther("10000000"))).wait(); // 10 mil to presale
+    // await (await tlcToken.transfer(presale.address, parseEther("10000000"))).wait(); // 10 mil to presale
 
-    routerContract = new ethers.Contract(routerAddress, routerAbi, ethers.provider);
-    await (await tlcToken.approve(routerAddress, parseEther("1000000000"))).wait();
+    // routerContract = new ethers.Contract(routerAddress, routerAbi, ethers.provider);
+    // await (await tlcToken.approve(routerAddress, parseEther("1000000000"))).wait();
     // add liquidity 10,000,000 TLC & 10,000 BNB
-    await (await routerContract.connect(owner).addLiquidityETH(
-      tlcToken.address,
-      parseEther("1"),
-      parseEther("1"),
-      parseEther("0.01"),
-      owner.address,
-      parseEther("123456789"), // deadline
-			{ value: parseEther("0.01") },
-    )).wait();
-    console.log("added liquidity");
-    await delay(20000);
+    // await (await routerContract.connect(owner).addLiquidityETH(
+    //   tlcToken.address,
+    //   parseEther("1"),
+    //   parseEther("1"),
+    //   parseEther("0.01"),
+    //   owner.address,
+    //   parseEther("123456789"), // deadline
+		// 	{ value: parseEther("0.01") },
+    // )).wait();
+    // console.log("added liquidity");
+    // await delay(20000);
 
-    const factoryContract = new ethers.Contract(factoryAddress, factoryAbi, ethers.provider);
-    const pair = await factoryContract.getPair(tlcToken.address, wbnbAddress);
-    console.log(`PCS pair = ${pair}`);
-    await tlcToken.setTransferToFee(pair, 400);
-    console.log("Set transfer to fee for sells");
+    // const factoryContract = new ethers.Contract(factoryAddress, factoryAbi, ethers.provider);
+    // const pair = await factoryContract.getPair(tlcToken.address, wbnbAddress);
+    // console.log(`PCS pair = ${pair}`);
+    // await tlcToken.setTransferToFee(pair, 400);
+    // console.log("Set transfer to fee for sells");
 }
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
