@@ -1,5 +1,6 @@
 require("dotenv").config();
 require("@nomiclabs/hardhat-waffle");
+require("@nomiclabs/hardhat-etherscan");
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -39,5 +40,8 @@ module.exports = {
       gasPrice: 5000000000,
       timeout: 100000
     },
+  },
+  etherscan: {
+    apiKey: process.env.API_KEY || ""
   }
 };
