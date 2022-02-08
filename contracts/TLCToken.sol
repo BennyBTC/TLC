@@ -121,6 +121,7 @@ contract TLCToken is ERC20, Ownable {
     function addWhitelist(address[] calldata addresses) external onlyOwner {
         require(addresses.length > 0, "Zero not allowed");
         for (uint i = 0; i < addresses.length; i++) {
+            require(addresses[i] != address(0), "Non zero address");
             feeWhitelist[addresses[i]] = true;
         }
     }
@@ -128,6 +129,7 @@ contract TLCToken is ERC20, Ownable {
     function removeWhitelist(address[] calldata addresses) external onlyOwner {
         require(addresses.length > 0, "Zero not allowed");
         for (uint i = 0; i < addresses.length; i++) {
+            require(addresses[i] != address(0), "Non zero address");
             feeWhitelist[addresses[i]] = false;
         }
     }
@@ -135,6 +137,7 @@ contract TLCToken is ERC20, Ownable {
     function addBlacklist(address[] calldata addresses) external onlyOwner {
         require(addresses.length > 0, "Zero not allowed");
         for (uint i = 0; i < addresses.length; i++) {
+            require(addresses[i] != address(0), "Non zero address");
             blacklist[addresses[i]] = true;
         }
     }
@@ -142,6 +145,7 @@ contract TLCToken is ERC20, Ownable {
     function removeBlacklist(address[] calldata addresses) external onlyOwner {
         require(addresses.length > 0, "Zero not allowed");
         for (uint i = 0; i < addresses.length; i++) {
+            require(addresses[i] != address(0), "Non zero address");
             blacklist[addresses[i]] = false;
         }
     }
