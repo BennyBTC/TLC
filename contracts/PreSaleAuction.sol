@@ -15,10 +15,10 @@ contract PreSaleAuction is Ownable {
 
     uint[5] public amountSoldPriceCliffs = [
         0,
-        1000000 * 1e18,
-        2000000 * 1e18,
-        3000000 * 1e18,
-        4000000 * 1e18
+        10000000 * 1e18,
+        20000000 * 1e18,
+        30000000 * 1e18,
+        40000000 * 1e18
     ];
 
     uint[5] public priceCliffs = [
